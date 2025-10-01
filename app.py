@@ -59,6 +59,14 @@ def scrape_consensus_data():
                 spread_home = consensus_data.get('spread_home', 'N/A')
                 spread_away_public = consensus_data.get('spread_away_public', 0)
                 spread_home_public = consensus_data.get('spread_home_public', 0)
+                spread_away_money = consensus_data.get('spread_away_money', 0)
+                spread_home_money = consensus_data.get('spread_home_money', 0)
+                total_over = consensus_data.get('total_over', 'N/A')
+                total_under = consensus_data.get('total_under', 'N/A')
+                total_over_public = consensus_data.get('total_over_public', 0)
+                total_under_public = consensus_data.get('total_under_public', 0)
+                total_over_money = consensus_data.get('total_over_money', 0)
+                total_under_money = consensus_data.get('total_under_money', 0)
                 
                 game_data = {
                     'league': league,
@@ -67,6 +75,9 @@ def scrape_consensus_data():
                     'bet_percentages': {'away': f'{bet_away}%', 'home': f'{bet_home}%'},
                     'money_percentages': {'away': f'{money_away}%', 'home': f'{money_home}%'},
                     'spread_percentages': {'away': f'{spread_away_public}%', 'home': f'{spread_home_public}%'},
+                    'spread_money_percentages': {'away': f'{spread_away_money}%', 'home': f'{spread_home_money}%'},
+                    'total_percentages': {'over': f'{total_over_public}%', 'under': f'{total_under_public}%'},
+                    'total_money_percentages': {'over': f'{total_over_money}%', 'under': f'{total_under_money}%'},
                     'best_odds': {
                         'away': f'{ml_away:+d}' if isinstance(ml_away, int) else str(ml_away),
                         'home': f'{ml_home:+d}' if isinstance(ml_home, int) else str(ml_home)
@@ -74,6 +85,10 @@ def scrape_consensus_data():
                     'spread': {
                         'away': f'{spread_away:+.1f}' if isinstance(spread_away, (int, float)) else str(spread_away),
                         'home': f'{spread_home:+.1f}' if isinstance(spread_home, (int, float)) else str(spread_home)
+                    },
+                    'totals': {
+                        'over': f'{total_over:+.1f}' if isinstance(total_over, (int, float)) else str(total_over),
+                        'under': f'{total_under:+.1f}' if isinstance(total_under, (int, float)) else str(total_under)
                     },
                     'num_bets': consensus_data.get('num_bets', 0),
                     'event_id': event.get('id'),

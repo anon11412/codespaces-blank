@@ -564,6 +564,12 @@
             const homeMoneyPct = parseInt(game.money_percentages.home);
             const awaySpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.away) : 0;
             const homeSpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.home) : 0;
+            const awaySpreadMoneyPct = game.spread_money_percentages ? parseInt(game.spread_money_percentages.away) : 0;
+            const homeSpreadMoneyPct = game.spread_money_percentages ? parseInt(game.spread_money_percentages.home) : 0;
+            const overPct = game.total_percentages ? parseInt(game.total_percentages.over) : 0;
+            const underPct = game.total_percentages ? parseInt(game.total_percentages.under) : 0;
+            const overMoneyPct = game.total_money_percentages ? parseInt(game.total_money_percentages.over) : 0;
+            const underMoneyPct = game.total_money_percentages ? parseInt(game.total_money_percentages.under) : 0;
             
             // Set league colors
             let leagueBg;
@@ -654,6 +660,78 @@
                                     </div>
                                 </div>
                                 <span class="percentage-value">${homeSpreadPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${awaySpreadMoneyPct > 0 || homeSpreadMoneyPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">💰 Spread - Money Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">${game.away_team} ${game.spread?.away || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${awaySpreadMoneyPct}%; background: linear-gradient(90deg, #8e44ad 0%, #9b59b6 100%)">
+                                        ${awaySpreadMoneyPct > 15 ? awaySpreadMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${awaySpreadMoneyPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">${game.home_team} ${game.spread?.home || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${homeSpreadMoneyPct}%; background: linear-gradient(90deg, #8e44ad 0%, #9b59b6 100%)">
+                                        ${homeSpreadMoneyPct > 15 ? homeSpreadMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${homeSpreadMoneyPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${overPct > 0 || underPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">📈 Totals - Bet Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">Over ${game.totals?.over || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${overPct}%; background: linear-gradient(90deg, #3498db 0%, #2980b9 100%)">
+                                        ${overPct > 15 ? overPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${overPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">Under ${game.totals?.under || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${underPct}%; background: linear-gradient(90deg, #3498db 0%, #2980b9 100%)">
+                                        ${underPct > 15 ? underPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${underPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${overMoneyPct > 0 || underMoneyPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">💰 Totals - Money Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">Over ${game.totals?.over || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${overMoneyPct}%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%)">
+                                        ${overMoneyPct > 15 ? overMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${overMoneyPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">Under ${game.totals?.under || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${underMoneyPct}%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%)">
+                                        ${underMoneyPct > 15 ? underMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${underMoneyPct}%</span>
                             </div>
                         </div>
                     ` : ''}
