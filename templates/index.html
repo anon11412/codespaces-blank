@@ -12,31 +12,7 @@
         }
 
         body {
-                       <h1>🏈 Sports Betting Consensus Dashboard</h1>
-              <div class="header">
-            <h1>🏈 Sports Betting Consensus Dashboard</h1>
-            <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
-            
-            <div class="league-filter-container">
-                <label for="leagueSelect" class="league-filter-label">Filter by League:</label>
-                <select id="leagueSelect" class="league-dropdown" onchange="filterByLeague(this.value)">
-                    <option value="all">📊 All Sports</option>
-                    <option value="NFL">🏈 NFL</option>
-                    <option value="NCAAF">🏈 College Football (NCAAF)</option>
-                    <option value="MLB">⚾ MLB</option>
-                </select>
-            </div>
-            
-            <div class="header-info">   <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
-            
-            <div class="league-filters">
-                <button class="filter-btn active" data-league="all" onclick="filterByLeague('all')">All Sports</button>
-                <button class="filter-btn nfl" data-league="NFL" onclick="filterByLeague('NFL')">🏈 NFL</button>
-                <button class="filter-btn ncaaf" data-league="NCAAF" onclick="filterByLeague('NCAAF')">🏈 College Football</button>
-                <button class="filter-btn mlb" data-league="MLB" onclick="filterByLeague('MLB')">⚾ MLB</button>
-            </div>
-            
-            <div class="header-info">ont-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -424,7 +400,17 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>� NFL & College Football Betting Consensus</h1>
+            <h1>🏈 Sports Betting Consensus Dashboard</h1>
+            <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
+            <div class="league-filter-container">
+                <label for="leagueSelect" class="league-filter-label">Filter by League:</label>
+                <select id="leagueSelect" class="league-dropdown" onchange="filterByLeague(this.value)">
+                    <option value="all">📊 All Sports</option>
+                    <option value="NFL">🏈 NFL</option>
+                    <option value="NCAAF">🏈 College Football (NCAAF)</option>
+                    <option value="MLB">⚾ MLB</option>
+                </select>
+            </div>
             <div class="header-info">
                 <div class="status-indicator">
                     <div class="status-dot" id="statusDot"></div>
@@ -461,6 +447,8 @@
 
         function filterByLeague(league) {
             currentFilter = league;
+            // Persist selection
+            try { localStorage.setItem('selectedLeague', league); } catch(e) {}
             
             // Filter and display games
             if (league === 'all') {
@@ -727,20 +715,7 @@
             }
         }
 
-        function updateLastUpdateTime(isoTime) {
-            try {
-                const date = new Date(isoTime);
-                const timeString = date.toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true 
-                });
-                document.getElementById('lastUpdate').textContent = timeString;
-            } catch {
-                document.getElementById('lastUpdate').textContent = 'Just now';
-            }
-        }
+        // Removed duplicate updateLastUpdateTime(isoTime) definition
 
         function displayError(message) {
             const container = document.getElementById('gamesContainer');
@@ -755,6 +730,17 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            // Restore persisted league selection if available
+            try {
+                const saved = localStorage.getItem('selectedLeague');
+                if (saved) {
+                    const select = document.getElementById('leagueSelect');
+                    if (select) {
+                        select.value = saved;
+                        currentFilter = saved;
+                    }
+                }
+            } catch(e) {}
             fetchData();
             startAutoRefresh();
         });
