@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFL & College Football Betting Consensus Dashboard</title>
+    <title>Sports Betting Consensus Dashboard - NFL, NCAAF, MLB</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,28 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                       <h1>🏈 Sports Betting Consensus Dashboard</h1>
+              <div class="header">
+            <h1>🏈 Sports Betting Consensus Dashboard</h1>
+            <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
+            
+            <div class="league-filters">
+                <button class="filter-btn active" data-league="all" onclick="filterByLeague('all')">📊 All Sports</button>
+                <button class="filter-btn nfl" data-league="NFL" onclick="filterByLeague('NFL')">🏈 NFL</button>
+                <button class="filter-btn ncaaf" data-league="NCAAF" onclick="filterByLeague('NCAAF')">🏈 College Football</button>
+                <button class="filter-btn mlb" data-league="MLB" onclick="filterByLeague('MLB')">⚾ MLB</button>
+            </div>
+            
+            <div class="header-info">   <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
+            
+            <div class="league-filters">
+                <button class="filter-btn active" data-league="all" onclick="filterByLeague('all')">All Sports</button>
+                <button class="filter-btn nfl" data-league="NFL" onclick="filterByLeague('NFL')">🏈 NFL</button>
+                <button class="filter-btn ncaaf" data-league="NCAAF" onclick="filterByLeague('NCAAF')">🏈 College Football</button>
+                <button class="filter-btn mlb" data-league="MLB" onclick="filterByLeague('MLB')">⚾ MLB</button>
+            </div>
+            
+            <div class="header-info">ont-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
@@ -152,6 +173,64 @@
 
         input:checked + .slider:before {
             transform: translateX(24px);
+        }
+
+        .league-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .filter-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-btn.nfl {
+            border-color: #013369;
+            color: #013369;
+        }
+
+        .filter-btn.nfl.active {
+            background: #013369;
+            color: white;
+        }
+
+        .filter-btn.ncaaf {
+            border-color: #CC0000;
+            color: #CC0000;
+        }
+
+        .filter-btn.ncaaf.active {
+            background: #CC0000;
+            color: white;
+        }
+
+        .filter-btn.mlb {
+            border-color: #041E42;
+            color: #041E42;
+        }
+
+        .filter-btn.mlb.active {
+            background: #041E42;
+            color: white;
         }
 
         .games-grid {
@@ -386,6 +465,32 @@
     <script>
         let autoRefreshInterval = null;
         let autoRefreshEnabled = true;
+        let allGames = []; // Store all games for filtering
+        let currentFilter = 'all'; // Current league filter
+
+        function filterByLeague(league) {
+            currentFilter = league;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.league === league) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Filter and display games
+            if (league === 'all') {
+                displayGames(allGames);
+            } else {
+                const filteredGames = allGames.filter(game => game.league === league);
+                displayGames(filteredGames);
+            }
+            
+            // Update status
+            const count = league === 'all' ? allGames.length : allGames.filter(g => g.league === league).length;
+            updateStatus(`${count} ${league === 'all' ? '' : league} games loaded`, 'active');
+        }
 
         function toggleAutoRefresh() {
             autoRefreshEnabled = document.getElementById('autoRefresh').checked;
@@ -433,9 +538,9 @@
                 const data = await response.json();
                 
                 if (data.games) {
-                    displayGames(data.games);
+                    allGames = data.games; // Store all games for filtering
+                    filterByLeague(currentFilter); // Apply current filter
                     updateLastUpdateTime();
-                    updateStatus(`${data.count} games loaded (${data.source})`, 'active');
                 } else {
                     displayError(data.error || 'Failed to fetch data');
                     updateStatus('Error fetching data', 'error');
@@ -488,8 +593,17 @@
             const awaySpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.away) : 0;
             const homeSpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.home) : 0;
             
-            const leagueColor = game.league === 'NFL' ? '#013369' : '#CC0000';
-            const leagueBg = game.league === 'NFL' ? '#013369' : '#CC0000';
+            // Set league colors
+            let leagueBg;
+            if (game.league === 'NFL') {
+                leagueBg = '#013369';
+            } else if (game.league === 'NCAAF') {
+                leagueBg = '#CC0000';
+            } else if (game.league === 'MLB') {
+                leagueBg = '#041E42';
+            } else {
+                leagueBg = '#667eea';
+            }
 
             return `
                 <div class="game-card">

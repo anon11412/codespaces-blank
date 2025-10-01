@@ -7,7 +7,8 @@ CORS(app)
 
 def scrape_consensus_data():
     urls = {'NFL': 'https://api.actionnetwork.com/web/v1/scoreboard/nfl',
-            'NCAAF': 'https://api.actionnetwork.com/web/v1/scoreboard/ncaaf'}
+            'NCAAF': 'https://api.actionnetwork.com/web/v1/scoreboard/ncaaf',
+            'MLB': 'https://api.actionnetwork.com/web/v1/scoreboard/mlb'}
     
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
@@ -97,7 +98,7 @@ def get_consensus():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'leagues': ['NFL', 'NCAAF']})
+    return jsonify({'status': 'healthy', 'leagues': ['NFL', 'NCAAF', 'MLB']})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
