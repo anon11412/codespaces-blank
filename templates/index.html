@@ -448,7 +448,12 @@
         
         function updateLastUpdateTime() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true 
+            });
             document.getElementById('lastUpdate').textContent = timeString;
         }
 
@@ -493,7 +498,10 @@
                             <span style="background: ${leagueBg}; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; font-size: 0.8em;">${game.league}</span>
                             <div class="teams">${game.away_team} @ ${game.home_team}</div>
                         </div>
-                        ${game.num_bets ? `<div style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">${game.num_bets.toLocaleString()} bets</div>` : ''}
+                        <div style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">
+                            ${game.start_time ? `<div>🕐 ${formatGameTime(game.start_time)}</div>` : ''}
+                            ${game.num_bets ? `<div>${game.num_bets.toLocaleString()} bets</div>` : ''}
+                        </div>
                     </div>
                     
                     <div class="consensus-section">
@@ -586,17 +594,38 @@
         }
 
         function formatGameTime(isoTime) {
-            if (isoTime === 'TBD') return 'TBD';
+            if (!isoTime || isoTime === 'TBD') return 'TBD';
             
             try {
                 const date = new Date(isoTime);
-                return date.toLocaleTimeString('en-US', { 
+                if (isNaN(date.getTime())) return 'TBD';
+                
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const gameDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                
+                const diffDays = Math.floor((gameDate - today) / (1000 * 60 * 60 * 24));
+                
+                let dateStr = '';
+                if (diffDays === 0) {
+                    dateStr = 'Today';
+                } else if (diffDays === 1) {
+                    dateStr = 'Tomorrow';
+                } else if (diffDays > 1 && diffDays <= 7) {
+                    dateStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+                } else {
+                    dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                
+                const timeStr = date.toLocaleTimeString('en-US', { 
                     hour: 'numeric', 
                     minute: '2-digit',
                     hour12: true 
                 });
+                
+                return `${dateStr} ${timeStr}`;
             } catch {
-                return isoTime;
+                return 'TBD';
             }
         }
 
