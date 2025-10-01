@@ -219,6 +219,32 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
 
+        .game-card.live-game {
+            border: 3px solid #e74c3c;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+        }
+
+        .game-card.live-game:hover {
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .live-indicator {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            animation: pulse-red 2s infinite;
+            text-transform: uppercase;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -512,7 +538,11 @@
                 if (data.games) {
                     allGames = data.games; // Store all games for filtering
                     filterByLeague(currentFilter); // Apply current filter
-                    updateLastUpdateTime();
+                    
+                    // Only update timestamp if server provided one (meaning data changed)
+                    if (data.last_updated) {
+                        updateLastUpdateTime(data.last_updated);
+                    }
                 } else {
                     displayError(data.error || 'Failed to fetch data');
                     updateStatus('Error fetching data', 'error');
@@ -523,15 +553,19 @@
             }
         }
         
-        function updateLastUpdateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true 
-            });
-            document.getElementById('lastUpdate').textContent = timeString;
+        function updateLastUpdateTime(isoTimeString) {
+            if (isoTimeString) {
+                // Use server-provided timestamp
+                const date = new Date(isoTimeString);
+                const timeString = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true 
+                });
+                document.getElementById('lastUpdate').textContent = timeString;
+            }
+            // If no timestamp provided, don't update the display
         }
 
         function displayGames(games) {
@@ -584,10 +618,11 @@
             }
 
             return `
-                <div class="game-card">
+                <div class="game-card${game.is_live ? ' live-game' : ''}">
                     <div class="game-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="background: ${leagueBg}; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; font-size: 0.8em;">${game.league}</span>
+                            ${game.is_live ? '<span class="live-indicator">🔴 LIVE</span>' : ''}
                             <div class="teams">${game.away_team} @ ${game.home_team}</div>
                         </div>
                         <div style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">

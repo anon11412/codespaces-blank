@@ -1,9 +1,15 @@
 from flask import Flask, render_template, jsonify
 from flask_cors import CORS
 import requests
+import json
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
+
+# Global variables to track data changes
+_cached_data = None
+_last_update_time = None
 
 def scrape_consensus_data():
     urls = {'NFL': 'https://api.actionnetwork.com/web/v1/scoreboard/nfl',
@@ -20,7 +26,11 @@ def scrape_consensus_data():
             data = response.json()
             
             for event in data.get('games', []):
-                if event.get('status') not in ['scheduled', 'in_progress']:
+                # Include more game statuses to keep live games visible
+                game_status = event.get('status')
+                
+                # Exclude only clearly finished games
+                if game_status in ['final', 'completed', 'canceled', 'cancelled', 'postponed']:
                     continue
                     
                 teams = event.get('teams', [])
@@ -92,16 +102,40 @@ def scrape_consensus_data():
                     },
                     'num_bets': consensus_data.get('num_bets', 0),
                     'event_id': event.get('id'),
-                    'start_time': event.get('start_time')
+                    'start_time': event.get('start_time'),
+                    'status': game_status,
+                    'is_live': game_status in ['in_progress', 'live', 'active', 'halftime', 'break']
                 }
                 all_games.append(game_data)
         
-        all_games.sort(key=lambda x: x.get('start_time', ''))
-        return {'games': all_games, 'source': 'Action Network (NFL + NCAAF)', 'count': len(all_games)}
+        # Sort games: Live games first, then by start time
+        all_games.sort(key=lambda x: (
+            0 if x.get('is_live') else 1,  # Live games first
+            x.get('start_time', '') or ''  # Then by start time
+        ))
+        return {'games': all_games, 'source': 'Action Network (NFL + NCAAF + MLB)', 'count': len(all_games)}
         
     except Exception as e:
         print(f"Error: {e}")
         return {'games': [], 'error': str(e)}
+
+def data_has_changed(new_data, old_data):
+    """Compare two data sets to see if they're different"""
+    if old_data is None:
+        return True
+    
+    # Convert to JSON strings for comparison (excluding timestamp fields)
+    def clean_data_for_comparison(data):
+        if not data or 'games' not in data:
+            return ""
+        # Create a clean copy without timestamp-sensitive fields
+        clean_games = []
+        for game in data['games']:
+            clean_game = {k: v for k, v in game.items() if k != 'start_time'}
+            clean_games.append(clean_game)
+        return json.dumps(clean_games, sort_keys=True)
+    
+    return clean_data_for_comparison(new_data) != clean_data_for_comparison(old_data)
 
 @app.route('/')
 def index():
@@ -109,7 +143,24 @@ def index():
 
 @app.route('/api/consensus')
 def get_consensus():
-    return jsonify(scrape_consensus_data())
+    global _cached_data, _last_update_time
+    
+    # Get fresh data
+    new_data = scrape_consensus_data()
+    
+    # Check if data has actually changed
+    if data_has_changed(new_data, _cached_data):
+        _cached_data = new_data.copy()
+        _last_update_time = datetime.now().isoformat()
+        print(f"Data changed - updating timestamp: {_last_update_time}")
+    else:
+        print("No data changes detected - keeping previous timestamp")
+    
+    # Add the last update time to the response
+    if _last_update_time:
+        new_data['last_updated'] = _last_update_time
+    
+    return jsonify(new_data)
 
 @app.route('/health')
 def health():
