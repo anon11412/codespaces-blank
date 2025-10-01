@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Logs
+*.log
+flask.log
+flask_new.log
+server.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation and test files
+*.md
+README*
+INVESTIGATION*
+UPGRADE*
+DATA-SOURCE*
+scoresandodds-consensus-analysis.md
+
+# Test and comparison scripts
+compare_*.py
+investigate_*.py
+monitor_*.py
+test_*.py
+app_old.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
