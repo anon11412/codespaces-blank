@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL & College Football Betting Consensus Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .update-info {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.loading {
+            background: #f39c12;
+        }
+
+        .status-dot.error {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .refresh-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2ecc71;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .teams {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .game-time {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            background: #ecf0f1;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .market-type {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+
+        .consensus-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+
+        .percentage-bar {
+            flex: 1;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin: 0 15px;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9em;
+            transition: width 0.5s ease;
+        }
+
+        .percentage-value {
+            font-weight: 700;
+            color: #2c3e50;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .best-odds {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .best-odds-title {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .odds-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .odds-label {
+            color: #5a6c7d;
+            font-size: 0.9em;
+        }
+
+        .odds-value {
+            font-weight: 700;
+            color: #2ecc71;
+            font-size: 0.95em;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+            background: white;
+            border-radius: 15px;
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>� NFL & College Football Betting Consensus</h1>
+            <div class="header-info">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Loading...</span>
+                </div>
+                <div class="update-info">
+                    Last updated: <strong id="lastUpdate">Never</strong>
+                </div>
+                <div class="refresh-controls">
+                    <button class="btn btn-primary" onclick="fetchData()">🔄 Refresh Now</button>
+                    <div class="auto-refresh-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                            <span class="slider"></span>
+                        </label>
+                        <span>Auto-refresh (30s)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gamesContainer">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = document.getElementById('autoRefresh').checked;
+            
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+                updateStatus('Live updates enabled', 'active');
+            } else {
+                stopAutoRefresh();
+                updateStatus('Auto-refresh paused', 'paused');
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            autoRefreshInterval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function updateStatus(text, status = 'active') {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            statusDot.className = 'status-dot';
+            if (status === 'loading') {
+                statusDot.classList.add('loading');
+            } else if (status === 'error') {
+                statusDot.classList.add('error');
+            }
+            
+            statusText.textContent = text;
+        }
+
+        async function fetchData() {
+            updateStatus('Fetching data...', 'loading');
+            
+            try {
+                const response = await fetch('/api/consensus');
+                const data = await response.json();
+                
+                if (data.games) {
+                    displayGames(data.games);
+                    updateLastUpdateTime();
+                    updateStatus(`${data.count} games loaded (${data.source})`, 'active');
+                } else {
+                    displayError(data.error || 'Failed to fetch data');
+                    updateStatus('Error fetching data', 'error');
+                }
+            } catch (error) {
+                displayError(error.message);
+                updateStatus('Connection error', 'error');
+            }
+        }
+        
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+
+        function displayGames(games) {
+            const container = document.getElementById('gamesContainer');
+            
+            if (!games || games.length === 0) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <h3>No Games Available</h3>
+                        <p>There are currently no games with consensus data available.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">Data will auto-refresh every 30 seconds.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="games-grid">
+                    ${games.map(game => createGameCard(game)).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function createGameCard(game) {
+            const awayBetPct = parseInt(game.bet_percentages.away);
+            const homeBetPct = parseInt(game.bet_percentages.home);
+            const awayMoneyPct = parseInt(game.money_percentages.away);
+            const homeMoneyPct = parseInt(game.money_percentages.home);
+            const awaySpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.away) : 0;
+            const homeSpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.home) : 0;
+            
+            const leagueColor = game.league === 'NFL' ? '#013369' : '#CC0000';
+            const leagueBg = game.league === 'NFL' ? '#013369' : '#CC0000';
+
+            return `
+                <div class="game-card">
+                    <div class="game-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: ${leagueBg}; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; font-size: 0.8em;">${game.league}</span>
+                            <div class="teams">${game.away_team} @ ${game.home_team}</div>
+                        </div>
+                        ${game.num_bets ? `<div style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">${game.num_bets.toLocaleString()} bets</div>` : ''}
+                    </div>
+                    
+                    <div class="consensus-section">
+                        <div class="section-title">📊 Moneyline - Bet Distribution</div>
+                        <div class="team-row">
+                            <span class="team-name">${game.away_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${awayBetPct}%">
+                                    ${awayBetPct > 15 ? awayBetPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${awayBetPct}%</span>
+                        </div>
+                        <div class="team-row">
+                            <span class="team-name">${game.home_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${homeBetPct}%">
+                                    ${homeBetPct > 15 ? homeBetPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${homeBetPct}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="consensus-section">
+                        <div class="section-title">💰 Moneyline - Money Distribution</div>
+                        <div class="team-row">
+                            <span class="team-name">${game.away_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${awayMoneyPct}%; background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%)">
+                                    ${awayMoneyPct > 15 ? awayMoneyPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${awayMoneyPct}%</span>
+                        </div>
+                        <div class="team-row">
+                            <span class="team-name">${game.home_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${homeMoneyPct}%; background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%)">
+                                    ${homeMoneyPct > 15 ? homeMoneyPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${homeMoneyPct}%</span>
+                        </div>
+                    </div>
+                    
+                    ${awaySpreadPct > 0 || homeSpreadPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">🎯 Spread - Bet Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">${game.away_team} ${game.spread?.away || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${awaySpreadPct}%; background: linear-gradient(90deg, #e67e22 0%, #d35400 100%)">
+                                        ${awaySpreadPct > 15 ? awaySpreadPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${awaySpreadPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">${game.home_team} ${game.spread?.home || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${homeSpreadPct}%; background: linear-gradient(90deg, #e67e22 0%, #d35400 100%)">
+                                        ${homeSpreadPct > 15 ? homeSpreadPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${homeSpreadPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${game.best_odds.away || game.best_odds.home ? `
+                        <div class="best-odds">
+                            <div class="best-odds-title">🎲 Best Moneyline Odds</div>
+                            ${game.best_odds.away ? `
+                                <div class="odds-row">
+                                    <span class="odds-label">${game.away_team}:</span>
+                                    <span class="odds-value">${game.best_odds.away}</span>
+                                </div>
+                            ` : ''}
+                            ${game.best_odds.home ? `
+                                <div class="odds-row">
+                                    <span class="odds-label">${game.home_team}:</span>
+                                    <span class="odds-value">${game.best_odds.home}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function formatGameTime(isoTime) {
+            if (isoTime === 'TBD') return 'TBD';
+            
+            try {
+                const date = new Date(isoTime);
+                return date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            } catch {
+                return isoTime;
+            }
+        }
+
+        function updateLastUpdateTime(isoTime) {
+            try {
+                const date = new Date(isoTime);
+                const timeString = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true 
+                });
+                document.getElementById('lastUpdate').textContent = timeString;
+            } catch {
+                document.getElementById('lastUpdate').textContent = 'Just now';
+            }
+        }
+
+        function displayError(message) {
+            const container = document.getElementById('gamesContainer');
+            container.innerHTML = `
+                <div class="error-message">
+                    <h3>⚠️ Error Loading Data</h3>
+                    <p>${message}</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Will retry automatically...</p>
+                </div>
+            `;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>
