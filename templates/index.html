@@ -17,11 +17,14 @@
             <h1>🏈 Sports Betting Consensus Dashboard</h1>
             <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
             
-            <div class="league-filters">
-                <button class="filter-btn active" data-league="all" onclick="filterByLeague('all')">📊 All Sports</button>
-                <button class="filter-btn nfl" data-league="NFL" onclick="filterByLeague('NFL')">🏈 NFL</button>
-                <button class="filter-btn ncaaf" data-league="NCAAF" onclick="filterByLeague('NCAAF')">🏈 College Football</button>
-                <button class="filter-btn mlb" data-league="MLB" onclick="filterByLeague('MLB')">⚾ MLB</button>
+            <div class="league-filter-container">
+                <label for="leagueSelect" class="league-filter-label">Filter by League:</label>
+                <select id="leagueSelect" class="league-dropdown" onchange="filterByLeague(this.value)">
+                    <option value="all">📊 All Sports</option>
+                    <option value="NFL">🏈 NFL</option>
+                    <option value="NCAAF">🏈 College Football (NCAAF)</option>
+                    <option value="MLB">⚾ MLB</option>
+                </select>
             </div>
             
             <div class="header-info">   <p style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">NFL • College Football • MLB</p>
@@ -175,62 +178,50 @@
             transform: translateX(24px);
         }
 
-        .league-filters {
+        .league-filter-container {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
             margin-bottom: 20px;
         }
 
-        .filter-btn {
-            padding: 8px 16px;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 8px;
-            cursor: pointer;
+        .league-filter-label {
             font-weight: 600;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+
+        .league-dropdown {
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #2c3e50;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 0.9em;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 200px;
         }
 
-        .filter-btn:hover {
-            background: #f0f0f0;
+        .league-dropdown:hover {
+            border-color: #5568d3;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
         }
 
-        .filter-btn.active {
-            background: #667eea;
-            color: white;
+        .league-dropdown:focus {
+            outline: none;
+            border-color: #5568d3;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .filter-btn.nfl {
-            border-color: #013369;
-            color: #013369;
-        }
-
-        .filter-btn.nfl.active {
-            background: #013369;
-            color: white;
-        }
-
-        .filter-btn.ncaaf {
-            border-color: #CC0000;
-            color: #CC0000;
-        }
-
-        .filter-btn.ncaaf.active {
-            background: #CC0000;
-            color: white;
-        }
-
-        .filter-btn.mlb {
-            border-color: #041E42;
-            color: #041E42;
-        }
-
-        .filter-btn.mlb.active {
-            background: #041E42;
-            color: white;
+        .league-dropdown option {
+            padding: 10px;
+            font-weight: 600;
         }
 
         .games-grid {
@@ -471,14 +462,6 @@
         function filterByLeague(league) {
             currentFilter = league;
             
-            // Update button states
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.league === league) {
-                    btn.classList.add('active');
-                }
-            });
-            
             // Filter and display games
             if (league === 'all') {
                 displayGames(allGames);
@@ -489,7 +472,8 @@
             
             // Update status
             const count = league === 'all' ? allGames.length : allGames.filter(g => g.league === league).length;
-            updateStatus(`${count} ${league === 'all' ? '' : league} games loaded`, 'active');
+            const leagueName = league === 'all' ? 'all sports' : league;
+            updateStatus(`${count} ${leagueName} games loaded`, 'active');
         }
 
         function toggleAutoRefresh() {
