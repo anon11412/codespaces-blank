@@ -80,8 +80,8 @@ def scrape_consensus_data():
                 
                 game_data = {
                     'league': league,
-                    'away_team': away_team.get('display_name', 'Unknown'),
-                    'home_team': home_team.get('display_name', 'Unknown'),
+                    'away_team': away_team.get('full_name', 'Unknown'),
+                    'home_team': home_team.get('full_name', 'Unknown'),
                     'bet_percentages': {'away': f'{bet_away}%', 'home': f'{bet_home}%'},
                     'money_percentages': {'away': f'{money_away}%', 'home': f'{money_home}%'},
                     'spread_percentages': {'away': f'{spread_away_public}%', 'home': f'{spread_home_public}%'},
