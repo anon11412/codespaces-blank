@@ -11,16 +11,35 @@ CORS(app)
 _cached_data = None
 _last_update_time = None
 
+# All available sports leagues from Action Network API
+# Format: 'Display Name': 'api_endpoint'
+AVAILABLE_LEAGUES = {
+    'NFL': 'nfl',
+    'NCAAF': 'ncaaf',
+    'NBA': 'nba',
+    'NCAAB': 'ncaab',
+    'MLB': 'mlb',
+    'NHL': 'nhl',
+    'WNBA': 'wnba',
+    'MLS': 'mls',
+    'EPL': 'epl',
+    'Bundesliga': 'bundesliga',
+    'ATP': 'atp',
+    'WTA': 'wta',
+    'UFC': 'ufc',
+    'Boxing': 'boxing'
+}
+
 def scrape_consensus_data():
-    urls = {'NFL': 'https://api.actionnetwork.com/web/v1/scoreboard/nfl',
-            'NCAAF': 'https://api.actionnetwork.com/web/v1/scoreboard/ncaaf',
-            'MLB': 'https://api.actionnetwork.com/web/v1/scoreboard/mlb'}
+    urls = {league_name: f'https://api.actionnetwork.com/web/v1/scoreboard/{endpoint}' 
+            for league_name, endpoint in AVAILABLE_LEAGUES.items()}
     
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
-        all_games = []
-        
-        for league, url in urls.items():
+    headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
+    all_games = []
+    failed_leagues = []
+    
+    for league, url in urls.items():
+        try:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
             data = response.json()
@@ -108,16 +127,30 @@ def scrape_consensus_data():
                 }
                 all_games.append(game_data)
         
-        # Sort games: Live games first, then by start time
-        all_games.sort(key=lambda x: (
-            0 if x.get('is_live') else 1,  # Live games first
-            x.get('start_time', '') or ''  # Then by start time
-        ))
-        return {'games': all_games, 'source': 'Action Network (NFL + NCAAF + MLB)', 'count': len(all_games)}
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        return {'games': [], 'error': str(e)}
+        except Exception as e:
+            # Log the error but continue with other leagues
+            failed_leagues.append(league)
+            print(f"Error fetching {league}: {e}")
+            continue
+    
+    # Sort games: Live games first, then by start time
+    all_games.sort(key=lambda x: (
+        0 if x.get('is_live') else 1,  # Live games first
+        x.get('start_time', '') or ''  # Then by start time
+    ))
+    
+    result = {
+        'games': all_games, 
+        'source': 'Action Network (All Sports)', 
+        'count': len(all_games),
+        'leagues_with_data': list(set(game['league'] for game in all_games))
+    }
+    
+    if failed_leagues:
+        result['failed_leagues'] = failed_leagues
+        print(f"Successfully fetched {len(all_games)} games. Failed leagues: {failed_leagues}")
+    
+    return result
 
 def data_has_changed(new_data, old_data):
     """Compare two data sets to see if they're different"""
@@ -164,7 +197,20 @@ def get_consensus():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'leagues': ['NFL', 'NCAAF', 'MLB']})
+    return jsonify({'status': 'healthy', 'leagues': list(AVAILABLE_LEAGUES.keys())})
+
+@app.route('/api/leagues')
+def get_leagues():
+    """Return all available leagues"""
+    leagues = [
+        {
+            'id': endpoint,
+            'name': name,
+            'display_name': name
+        }
+        for name, endpoint in AVAILABLE_LEAGUES.items()
+    ]
+    return jsonify({'leagues': leagues})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Favorites Feature</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f9f9f9;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .fail {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Favorites Feature Test</h1>
+        
+        <div class="test-step">
+            <h3>Step 1: Check Cookie Functions</h3>
+            <button onclick="testCookies()">Test Cookies</button>
+            <div id="cookie-result"></div>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 2: Open Main Dashboard</h3>
+            <p>Click the button below to open your dashboard in a new tab:</p>
+            <button onclick="window.open('http://localhost:5000', '_blank')">Open Dashboard</button>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 3: Test Favorites</h3>
+            <ol>
+                <li>Click the ☆ star on a few game cards</li>
+                <li>Star should turn to ⭐ and become bold/yellow</li>
+                <li>Game card should get a gold border</li>
+                <li>Click "⭐ Favorites" tab - should see your favorited games</li>
+                <li>Click back to "All Games" - stars should still be filled</li>
+                <li>Refresh the page (F5) - favorites should persist</li>
+                <li>Close browser, reopen - favorites should still be there</li>
+            </ol>
+        </div>
+        
+        <div class="test-step">
+            <h3>Step 4: Check Cookies from Here</h3>
+            <button onclick="checkSavedFavorites()">Check Saved Favorites</button>
+            <div id="favorites-result"></div>
+        </div>
+        
+        <h2>Expected Behavior:</h2>
+        <ul>
+            <li>✅ Click star → Instantly turns yellow/bold</li>
+            <li>✅ Gold border appears on card</li>
+            <li>✅ Badge count updates</li>
+            <li>✅ Favorites tab shows the game</li>
+            <li>✅ Switching tabs keeps favorites</li>
+            <li>✅ Page refresh keeps favorites</li>
+            <li>✅ Browser restart keeps favorites</li>
+        </ul>
+        
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        function setCookie(name, value, days = 365) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+        }
+
+        function getCookie(name) {
+            return document.cookie.split('; ').reduce((r, v) => {
+                const parts = v.split('=');
+                return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+            }, '');
+        }
+        
+        function testCookies() {
+            const result = document.getElementById('cookie-result');
+            
+            // Test write
+            setCookie('test', 'hello123');
+            
+            // Test read
+            const value = getCookie('test');
+            
+            if (value === 'hello123') {
+                result.innerHTML = '<p class="success">✅ Cookies are working! Value: ' + value + '</p>';
+            } else {
+                result.innerHTML = '<p class="fail">❌ Cookie test failed. Got: ' + value + '</p>';
+            }
+        }
+        
+        function checkSavedFavorites() {
+            const result = document.getElementById('favorites-result');
+            const favoritesStr = getCookie('favoriteGames');
+            
+            if (favoritesStr) {
+                try {
+                    const favorites = JSON.parse(favoritesStr);
+                    result.innerHTML = `
+                        <p class="success">✅ Found ${favorites.length} saved favorites:</p>
+                        <pre>${JSON.stringify(favorites, null, 2)}</pre>
+                    `;
+                } catch (e) {
+                    result.innerHTML = '<p class="fail">❌ Error parsing favorites: ' + e + '</p>';
+                }
+            } else {
+                result.innerHTML = '<p>ℹ️ No favorites saved yet. Star some games first!</p>';
+            }
+        }
+    </script>
+</body>
+</html>
