@@ -902,7 +902,10 @@
 
         function startAutoRefresh() {
             stopAutoRefresh(); // Clear any existing interval
-            autoRefreshInterval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+            // Fetch immediately once so users see fresh data right away,
+            // then continue polling on a 15-second interval.
+            fetchData();
+            autoRefreshInterval = setInterval(fetchData, 15000); // Refresh every 15 seconds
         }
 
         function stopAutoRefresh() {
@@ -976,7 +979,7 @@
                        <p style="margin-top: 10px; font-size: 0.9em;">Your favorites are saved and will persist across sessions.</p>`
                     : `<h3>No Games Available</h3>
                        <p>There are currently no games with consensus data available.</p>
-                       <p style="margin-top: 10px; font-size: 0.9em;">Data will auto-refresh every 30 seconds.</p>`;
+                    <p style="margin-top: 10px; font-size: 0.9em;">Data will auto-refresh every 15 seconds.</p>`;
                 
                 container.innerHTML = `<div class="no-data">${emptyMessage}</div>`;
                 return;
