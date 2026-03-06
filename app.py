@@ -13,27 +13,32 @@ _cached_data = None
 _last_update_time = None
 
 # All available sports leagues from Action Network API
-# Format: 'Display Name': 'api_endpoint'
+# Format: 'Display Name': ('api_endpoint', 'division_param' or None)
+# division_param is appended as ?division=X to get all D1 games instead of just Top 25
 AVAILABLE_LEAGUES = {
-    'NFL': 'nfl',
-    'NCAAF': 'ncaaf',
-    'NBA': 'nba',
-    'NCAAB': 'ncaab',
-    'MLB': 'mlb',
-    'NHL': 'nhl',
-    'WNBA': 'wnba',
-    'MLS': 'mls',
-    'EPL': 'epl',
-    'Bundesliga': 'bundesliga',
-    'ATP': 'atp',
-    'WTA': 'wta',
-    'UFC': 'ufc',
-    'Boxing': 'boxing'
+    'NFL': ('nfl', None),
+    'NCAAF': ('ncaaf', None),
+    'NBA': ('nba', None),
+    'NCAAB': ('ncaab', 'D1'),
+    'MLB': ('mlb', None),
+    'NHL': ('nhl', None),
+    'WNBA': ('wnba', None),
+    'MLS': ('mls', None),
+    'EPL': ('epl', None),
+    'Bundesliga': ('bundesliga', None),
+    'ATP': ('atp', None),
+    'WTA': ('wta', None),
+    'UFC': ('ufc', None),
+    'Boxing': ('boxing', None)
 }
 
 def scrape_consensus_data():
-    urls = {league_name: f'https://api.actionnetwork.com/web/v1/scoreboard/{endpoint}' 
-            for league_name, endpoint in AVAILABLE_LEAGUES.items()}
+    urls = {}
+    for league_name, (endpoint, division) in AVAILABLE_LEAGUES.items():
+        url = f'https://api.actionnetwork.com/web/v1/scoreboard/{endpoint}'
+        if division:
+            url += f'?division={division}'
+        urls[league_name] = url
     
     headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
     all_games = []
@@ -209,7 +214,7 @@ def get_leagues():
             'name': name,
             'display_name': name
         }
-        for name, endpoint in AVAILABLE_LEAGUES.items()
+        for name, (endpoint, _) in AVAILABLE_LEAGUES.items()
     ]
     return jsonify({'leagues': leagues})
 
