@@ -226,3 +226,4 @@ if __name__ == '__main__':
     # Only enable debug mode if running locally (not on Render)
     debug = os.environ.get('FLASK_ENV') == 'development'
     app.run(debug=debug, host='0.0.0.0', port=port)
+# Force update 2026-03-30
