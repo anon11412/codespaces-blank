@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Betting Consensus Dashboard - NFL, NCAAF, MLB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .update-info {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.loading {
+            background: #f39c12;
+        }
+
+        .status-dot.error {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .refresh-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2ecc71;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .league-filter-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .league-filter-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+
+        .league-dropdown {
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #2c3e50;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 200px;
+        }
+
+        .league-dropdown:hover {
+            border-color: #5568d3;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .league-dropdown:focus {
+            outline: none;
+            border-color: #5568d3;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .league-dropdown option {
+            padding: 10px;
+            font-weight: 600;
+        }
+
+        .game-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 0;
+        }
+
+        .game-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #7f8c8d;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .game-tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .game-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .game-tab .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 6px;
+            font-weight: bold;
+        }
+
+        .game-tab.active .badge {
+            background: #5568d3;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .game-card.favorited {
+            border: 2px solid #f39c12;
+            box-shadow: 0 5px 20px rgba(243, 156, 18, 0.3);
+        }
+
+        .star-button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 44px;
+            height: 44px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+
+        .star-button:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+            transform: scale(1.15);
+        }
+
+        .star-button:active {
+            transform: scale(0.95);
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .game-card.live-game {
+            border: 3px solid #e74c3c;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+        }
+
+        .game-card.live-game:hover {
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .live-indicator {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            animation: pulse-red 2s infinite;
+            text-transform: uppercase;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .teams {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .game-time {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            background: #ecf0f1;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .market-type {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+
+        .consensus-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .team-name {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+
+        .percentage-bar {
+            flex: 1;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin: 0 15px;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9em;
+            transition: width 0.5s ease;
+        }
+
+        .percentage-value {
+            font-weight: 700;
+            color: #2c3e50;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .best-odds {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .best-odds-title {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .odds-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .odds-label {
+            color: #5a6c7d;
+            font-size: 0.9em;
+        }
+
+        .odds-value {
+            font-weight: 700;
+            color: #2ecc71;
+            font-size: 0.95em;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+            background: white;
+            border-radius: 15px;
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏈 Sports Betting Consensus Dashboard</h1>
+            <p id="leagueSubtitle" style="color: #7f8c8d; margin-top: 5px; margin-bottom: 15px;">All Major Sports Leagues</p>
+            <div class="league-filter-container">
+                <label for="leagueSelect" class="league-filter-label">Filter by League:</label>
+                <select id="leagueSelect" class="league-dropdown" onchange="filterByLeague(this.value)">
+                    <option value="all">📊 All Sports</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="header-info">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Loading...</span>
+                </div>
+                <div class="update-info">
+                    Last updated: <strong id="lastUpdate">Never</strong>
+                </div>
+                <div class="refresh-controls">
+                    <button class="btn btn-primary" onclick="fetchData()">🔄 Refresh Now</button>
+                    <div class="auto-refresh-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                            <span class="slider"></span>
+                        </label>
+                        <span>Auto-refresh (30s)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-tabs" style="background: white; border-radius: 15px; padding: 20px 20px 0 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            <button class="game-tab active" onclick="filterByGameType('all')" id="tab-all">
+                🎯 All Games <span class="badge" id="badge-all">0</span>
+            </button>
+            <button class="game-tab" onclick="filterByGameType('live')" id="tab-live">
+                🔴 Live Games <span class="badge" id="badge-live">0</span>
+            </button>
+            <button class="game-tab" onclick="filterByGameType('upcoming')" id="tab-upcoming">
+                📅 Upcoming Games <span class="badge" id="badge-upcoming">0</span>
+            </button>
+            <button class="game-tab" onclick="filterByGameType('favorites')" id="tab-favorites">
+                ⭐ Favorites <span class="badge" id="badge-favorites">0</span>
+            </button>
+        </div>
+
+        <div id="gamesContainer">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = true;
+        let allGames = []; // Store all games for filtering
+        let currentFilter = 'all'; // Current league filter
+        let currentGameType = 'all'; // Current game type filter: 'all', 'live', 'upcoming', 'favorites'
+        let availableLeagues = []; // Store all available leagues from API
+        let favoriteGames = new Set(); // Store favorite game IDs
+
+        // Cookie helper functions
+        function setCookie(name, value, days = 365) {
+            try {
+                const expires = new Date(Date.now() + days * 864e5).toUTCString();
+                document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+                console.log(`✓ Set cookie: ${name}`);
+            } catch (e) {
+                console.error('Error setting cookie:', e);
+            }
+        }
+
+        function getCookie(name) {
+            try {
+                const nameEQ = name + "=";
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    if (cookie.indexOf(nameEQ) === 0) {
+                        const value = cookie.substring(nameEQ.length);
+                        console.log(`✓ Retrieved cookie: ${name} = ${value}`);
+                        return decodeURIComponent(value);
+                    }
+                }
+                console.log(`✗ Cookie not found: ${name}`);
+                return '';
+            } catch (e) {
+                console.error('Error getting cookie:', e);
+                return '';
+            }
+        }
+
+        // Load favorites from cookies
+        function loadFavorites() {
+            console.log('=== Loading favorites from cookies ===');
+            const favoritesStr = getCookie('favoriteGames');
+            console.log('Cookie string:', favoritesStr);
+            
+            if (favoritesStr && favoritesStr.length > 0) {
+                try {
+                    const favorites = JSON.parse(favoritesStr);
+                    favoriteGames = new Set(favorites);
+                    console.log(`✓ Loaded ${favoriteGames.size} favorites from cookies:`, Array.from(favoriteGames));
+                } catch (e) {
+                    console.error('Error parsing favorites JSON:', e);
+                    favoriteGames = new Set();
+                }
+            } else {
+                console.log('No favorites cookie found, starting fresh');
+                favoriteGames = new Set();
+            }
+        }
+
+        // Save favorites to cookies
+        function saveFavorites() {
+            console.log('=== Saving favorites to cookies ===');
+            const favoritesArray = Array.from(favoriteGames);
+            console.log('Favorites to save:', favoritesArray);
+            const jsonStr = JSON.stringify(favoritesArray);
+            console.log('JSON string:', jsonStr);
+            setCookie('favoriteGames', jsonStr);
+            console.log(`✓ Saved ${favoritesArray.length} favorites to cookies`);
+        }
+
+        // Toggle favorite status
+        function toggleFavorite(eventId) {
+            const eventIdStr = String(eventId);
+            console.log('=== Toggle Favorite ===');
+            console.log('Event ID (string):', eventIdStr);
+            console.log('Current state before toggle:', Array.from(favoriteGames));
+            
+            const wasFavorited = favoriteGames.has(eventIdStr);
+            console.log('Was favorited?', wasFavorited);
+            
+            if (wasFavorited) {
+                favoriteGames.delete(eventIdStr);
+                console.log('✓ Removed from favorites');
+            } else {
+                favoriteGames.add(eventIdStr);
+                console.log('✓ Added to favorites');
+            }
+            
+            console.log('State after toggle:', Array.from(favoriteGames));
+            
+            saveFavorites();
+            
+            // Update the card styling immediately
+            const card = document.querySelector(`[data-event-id="${eventIdStr}"]`);
+            if (card) {
+                if (favoriteGames.has(eventIdStr)) {
+                    card.classList.add('favorited');
+                    console.log('✓ Added favorited class to card');
+                } else {
+                    card.classList.remove('favorited');
+                    console.log('✓ Removed favorited class from card');
+                }
+                
+                // Update star button appearance
+                const button = card.querySelector('.star-button');
+                if (button) {
+                    const isFav = favoriteGames.has(eventIdStr);
+                    button.textContent = isFav ? '⭐' : '☆';
+                    button.style.color = isFav ? '#FFD700' : '#95a5a6';
+                    button.style.textShadow = isFav ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none';
+                    console.log('✓ Updated star button appearance');
+                }
+            } else {
+                console.warn(`Card not found: [data-event-id="${eventIdStr}"]`);
+            }
+            
+            // Update badge counts
+            updateGameCounts();
+            console.log('✓ Updated game counts');
+            
+            // If we're viewing favorites, refresh to show/hide the game
+            if (currentGameType === 'favorites') {
+                console.log('Currently in favorites view, refreshing...');
+                applyFilters();
+            }
+            
+            console.log('=== Toggle Complete ===');
+        }
+
+        // Check if game is favorited
+        function isFavorited(eventId) {
+            const eventIdStr = String(eventId);
+            const result = favoriteGames.has(eventIdStr);
+            return result;
+        }
+
+        // Emoji mapping for different sports
+        const LEAGUE_EMOJIS = {
+            'NFL': '🏈',
+            'NCAAF': '🏈',
+            'NBA': '🏀',
+            'NCAAB': '🏀',
+            'WNBA': '🏀',
+            'MLB': '⚾',
+            'NHL': '🏒',
+            'MLS': '⚽',
+            'EPL': '⚽',
+            'La Liga': '⚽',
+            'Serie A': '⚽',
+            'Bundesliga': '⚽',
+            'Ligue 1': '⚽',
+            'Liga MX': '⚽',
+            'UEFA Champions League': '⚽',
+            'ATP': '🎾',
+            'WTA': '🎾',
+            'UFC': '🥊',
+            'Boxing': '🥊',
+            'Golf PGA': '⛳',
+            'NASCAR': '🏎️',
+            'F1': '🏎️',
+            'CFL': '🏈',
+            'AFL': '🏈'
+        };
+
+        async function loadAvailableLeagues() {
+            try {
+                const response = await fetch('/api/leagues');
+                const data = await response.json();
+                
+                if (data.leagues) {
+                    availableLeagues = data.leagues;
+                    populateLeagueDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading leagues:', error);
+                // Fallback to showing current games' leagues
+            }
+        }
+
+        function populateLeagueDropdown() {
+            const select = document.getElementById('leagueSelect');
+            
+            // Keep "All Sports" option
+            select.innerHTML = '<option value="all">📊 All Sports</option>';
+            
+            // Add all available leagues
+            availableLeagues.forEach(league => {
+                const option = document.createElement('option');
+                option.value = league.name;
+                const emoji = LEAGUE_EMOJIS[league.name] || '🏆';
+                option.textContent = `${emoji} ${league.name}`;
+                select.appendChild(option);
+            });
+            
+            // Restore previous selection if available
+            try {
+                const saved = localStorage.getItem('selectedLeague');
+                if (saved && (saved === 'all' || availableLeagues.some(l => l.name === saved))) {
+                    select.value = saved;
+                    currentFilter = saved;
+                }
+            } catch(e) {}
+        }
+
+        function filterByLeague(league) {
+            currentFilter = league;
+            // Persist selection
+            try { localStorage.setItem('selectedLeague', league); } catch(e) {}
+            
+            // Apply combined filters
+            applyFilters();
+        }
+
+        function filterByGameType(gameType) {
+            currentGameType = gameType;
+            
+            // Update tab active states
+            document.querySelectorAll('.game-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${gameType}`).classList.add('active');
+            
+            // Apply combined filters
+            applyFilters();
+        }
+
+        function applyFilters() {
+            // First filter by league
+            let filteredGames = currentFilter === 'all' 
+                ? [...allGames] 
+                : allGames.filter(game => game.league === currentFilter);
+            
+            // Then filter by game type
+            if (currentGameType === 'live') {
+                filteredGames = filteredGames.filter(game => game.is_live);
+            } else if (currentGameType === 'upcoming') {
+                filteredGames = filteredGames.filter(game => !game.is_live);
+            } else if (currentGameType === 'favorites') {
+                // Show only favorited games
+                filteredGames = filteredGames.filter(game => isFavorited(game.event_id));
+                
+                // For favorites view, categorize and sort
+                filteredGames = categorizeFavorites(filteredGames);
+            }
+            
+            // Display filtered games
+            displayGames(filteredGames, currentGameType === 'favorites');
+            
+            // Update badge counts
+            updateGameCounts();
+            
+            // Update status
+            const count = filteredGames.length;
+            const leagueName = currentFilter === 'all' ? 'all sports' : currentFilter;
+            const gameTypeName = currentGameType === 'all' ? '' : ` ${currentGameType}`;
+            updateStatus(`${count} ${leagueName}${gameTypeName} games loaded`, 'active');
+            
+            // Update subtitle to show current selection
+            const subtitle = document.getElementById('leagueSubtitle');
+            if (subtitle) {
+                if (currentFilter === 'all') {
+                    // Show leagues that have games
+                    const leaguesWithGames = [...new Set(allGames.map(g => g.league))].sort();
+                    if (leaguesWithGames.length > 0) {
+                        subtitle.textContent = leaguesWithGames.join(' • ');
+                    } else {
+                        subtitle.textContent = 'All Major Sports Leagues';
+                    }
+                } else {
+                    const emoji = LEAGUE_EMOJIS[currentFilter] || '🏆';
+                    subtitle.textContent = `${emoji} ${currentFilter}`;
+                }
+            }
+        }
+
+        function updateGameCounts() {
+            // Get games for current league filter
+            const leagueFilteredGames = currentFilter === 'all' 
+                ? allGames 
+                : allGames.filter(game => game.league === currentFilter);
+            
+            // Count by game type
+            const allCount = leagueFilteredGames.length;
+            const liveCount = leagueFilteredGames.filter(game => game.is_live).length;
+            const upcomingCount = leagueFilteredGames.filter(game => !game.is_live).length;
+            const favoritesCount = leagueFilteredGames.filter(game => isFavorited(game.event_id)).length;
+            
+            // Update badges
+            document.getElementById('badge-all').textContent = allCount;
+            document.getElementById('badge-live').textContent = liveCount;
+            document.getElementById('badge-upcoming').textContent = upcomingCount;
+            document.getElementById('badge-favorites').textContent = favoritesCount;
+        }
+
+        function categorizeFavorites(games) {
+            // Separate into live, upcoming, and past
+            const live = [];
+            const upcoming = [];
+            const past = [];
+            
+            games.forEach(game => {
+                if (game.is_live) {
+                    live.push(game);
+                } else if (game.status && ['final', 'completed'].includes(game.status.toLowerCase())) {
+                    past.push(game);
+                } else {
+                    upcoming.push(game);
+                }
+            });
+            
+            // Return in order: live, upcoming, past
+            return [...live, ...upcoming, ...past];
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = document.getElementById('autoRefresh').checked;
+            
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+                updateStatus('Live updates enabled', 'active');
+            } else {
+                stopAutoRefresh();
+                updateStatus('Auto-refresh paused', 'paused');
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            // Fetch immediately once so users see fresh data right away,
+            // then continue polling on a 15-second interval.
+            fetchData();
+            autoRefreshInterval = setInterval(fetchData, 15000); // Refresh every 15 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function updateStatus(text, status = 'active') {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            statusDot.className = 'status-dot';
+            if (status === 'loading') {
+                statusDot.classList.add('loading');
+            } else if (status === 'error') {
+                statusDot.classList.add('error');
+            }
+            
+            statusText.textContent = text;
+        }
+
+        async function fetchData() {
+            updateStatus('Fetching data...', 'loading');
+            
+            try {
+                const response = await fetch('/api/consensus');
+                const data = await response.json();
+                
+                if (data.games) {
+                    allGames = data.games; // Store all games for filtering
+                    applyFilters(); // Apply current filters (league + game type)
+                    
+                    // Only update timestamp if server provided one (meaning data changed)
+                    if (data.last_updated) {
+                        updateLastUpdateTime(data.last_updated);
+                    }
+                } else {
+                    displayError(data.error || 'Failed to fetch data');
+                    updateStatus('Error fetching data', 'error');
+                }
+            } catch (error) {
+                displayError(error.message);
+                updateStatus('Connection error', 'error');
+            }
+        }
+        
+        function updateLastUpdateTime(isoTimeString) {
+            if (isoTimeString) {
+                // Use server-provided timestamp
+                const date = new Date(isoTimeString);
+                const timeString = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true 
+                });
+                document.getElementById('lastUpdate').textContent = timeString;
+            }
+            // If no timestamp provided, don't update the display
+        }
+
+        function displayGames(games, showCategories = false) {
+            const container = document.getElementById('gamesContainer');
+            
+            if (!games || games.length === 0) {
+                const emptyMessage = currentGameType === 'favorites' 
+                    ? `<h3>No Favorite Games</h3>
+                       <p>Click the ⭐ star on any game to add it to your favorites!</p>
+                       <p style="margin-top: 10px; font-size: 0.9em;">Your favorites are saved and will persist across sessions.</p>`
+                    : `<h3>No Games Available</h3>
+                       <p>There are currently no games with consensus data available.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Data will auto-refresh every 15 seconds.</p>`;
+                
+                container.innerHTML = `<div class="no-data">${emptyMessage}</div>`;
+                return;
+            }
+
+            let html = '';
+            
+            if (showCategories && currentGameType === 'favorites') {
+                // Categorize favorites
+                const liveGames = games.filter(g => g.is_live);
+                const upcomingGames = games.filter(g => !g.is_live && !['final', 'completed'].includes(g.status?.toLowerCase()));
+                const pastGames = games.filter(g => ['final', 'completed'].includes(g.status?.toLowerCase()));
+                
+                if (liveGames.length > 0) {
+                    html += `
+                        <h2 style="color: #e74c3c; margin: 20px 0 15px 0; font-size: 1.5em;">
+                            🔴 Live Games (${liveGames.length})
+                        </h2>
+                        <div class="games-grid">
+                            ${liveGames.map(game => createGameCard(game)).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (upcomingGames.length > 0) {
+                    html += `
+                        <h2 style="color: #667eea; margin: 20px 0 15px 0; font-size: 1.5em;">
+                            📅 Upcoming Games (${upcomingGames.length})
+                        </h2>
+                        <div class="games-grid">
+                            ${upcomingGames.map(game => createGameCard(game)).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (pastGames.length > 0) {
+                    html += `
+                        <h2 style="color: #95a5a6; margin: 20px 0 15px 0; font-size: 1.5em;">
+                            ✅ Past Games (${pastGames.length})
+                        </h2>
+                        <div class="games-grid">
+                            ${pastGames.map(game => createGameCard(game)).join('')}
+                        </div>
+                    `;
+                }
+            } else {
+                html = `
+                    <div class="games-grid">
+                        ${games.map(game => createGameCard(game)).join('')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function createGameCard(game) {
+            const awayBetPct = parseInt(game.bet_percentages.away);
+            const homeBetPct = parseInt(game.bet_percentages.home);
+            const awayMoneyPct = parseInt(game.money_percentages.away);
+            const homeMoneyPct = parseInt(game.money_percentages.home);
+            const awaySpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.away) : 0;
+            const homeSpreadPct = game.spread_percentages ? parseInt(game.spread_percentages.home) : 0;
+            const awaySpreadMoneyPct = game.spread_money_percentages ? parseInt(game.spread_money_percentages.away) : 0;
+            const homeSpreadMoneyPct = game.spread_money_percentages ? parseInt(game.spread_money_percentages.home) : 0;
+            const overPct = game.total_percentages ? parseInt(game.total_percentages.over) : 0;
+            const underPct = game.total_percentages ? parseInt(game.total_percentages.under) : 0;
+            const overMoneyPct = game.total_money_percentages ? parseInt(game.total_money_percentages.over) : 0;
+            const underMoneyPct = game.total_money_percentages ? parseInt(game.total_money_percentages.under) : 0;
+            
+            // Set league colors
+            let leagueBg;
+            if (game.league === 'NFL') {
+                leagueBg = '#013369';
+            } else if (game.league === 'NCAAF') {
+                leagueBg = '#CC0000';
+            } else if (game.league === 'MLB') {
+                leagueBg = '#041E42';
+            } else {
+                leagueBg = '#667eea';
+            }
+
+            const isFav = isFavorited(game.event_id);
+            const favClass = isFav ? ' favorited' : '';
+            const starSymbol = isFav ? '⭐' : '☆';
+            const starColor = isFav ? '#FFD700' : '#95a5a6';
+            const starGlow = isFav ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none';
+
+            return `
+                <div class="game-card${game.is_live ? ' live-game' : ''}${favClass}" data-event-id="${game.event_id}">
+                    <button class="star-button" data-event-id="${game.event_id}" onclick="toggleFavorite('${game.event_id}')" style="color: ${starColor}; text-shadow: ${starGlow};">
+                        ${starSymbol}
+                    </button>
+                    <div class="game-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: ${leagueBg}; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; font-size: 0.8em;">${game.league}</span>
+                            ${game.is_live ? '<span class="live-indicator">🔴 LIVE</span>' : ''}
+                            <div class="teams">${game.away_team} @ ${game.home_team}</div>
+                        </div>
+                        <div style="font-size: 0.85em; color: #7f8c8d; margin-top: 5px;">
+                            ${game.start_time ? `<div>🕐 ${formatGameTime(game.start_time)}</div>` : ''}
+                            ${game.num_bets ? `<div>${game.num_bets.toLocaleString()} bets</div>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="consensus-section">
+                        <div class="section-title">📊 Moneyline - Bet Distribution</div>
+                        <div class="team-row">
+                            <span class="team-name">${game.away_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${awayBetPct}%">
+                                    ${awayBetPct > 15 ? awayBetPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${awayBetPct}%</span>
+                        </div>
+                        <div class="team-row">
+                            <span class="team-name">${game.home_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${homeBetPct}%">
+                                    ${homeBetPct > 15 ? homeBetPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${homeBetPct}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="consensus-section">
+                        <div class="section-title">💰 Moneyline - Money Distribution</div>
+                        <div class="team-row">
+                            <span class="team-name">${game.away_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${awayMoneyPct}%; background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%)">
+                                    ${awayMoneyPct > 15 ? awayMoneyPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${awayMoneyPct}%</span>
+                        </div>
+                        <div class="team-row">
+                            <span class="team-name">${game.home_team}</span>
+                            <div class="percentage-bar">
+                                <div class="percentage-fill" style="width: ${homeMoneyPct}%; background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%)">
+                                    ${homeMoneyPct > 15 ? homeMoneyPct + '%' : ''}
+                                </div>
+                            </div>
+                            <span class="percentage-value">${homeMoneyPct}%</span>
+                        </div>
+                    </div>
+                    
+                    ${awaySpreadPct > 0 || homeSpreadPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">🎯 Spread - Bet Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">${game.away_team} ${game.spread?.away || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${awaySpreadPct}%; background: linear-gradient(90deg, #e67e22 0%, #d35400 100%)">
+                                        ${awaySpreadPct > 15 ? awaySpreadPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${awaySpreadPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">${game.home_team} ${game.spread?.home || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${homeSpreadPct}%; background: linear-gradient(90deg, #e67e22 0%, #d35400 100%)">
+                                        ${homeSpreadPct > 15 ? homeSpreadPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${homeSpreadPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${awaySpreadMoneyPct > 0 || homeSpreadMoneyPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">💰 Spread - Money Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">${game.away_team} ${game.spread?.away || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${awaySpreadMoneyPct}%; background: linear-gradient(90deg, #8e44ad 0%, #9b59b6 100%)">
+                                        ${awaySpreadMoneyPct > 15 ? awaySpreadMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${awaySpreadMoneyPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">${game.home_team} ${game.spread?.home || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${homeSpreadMoneyPct}%; background: linear-gradient(90deg, #8e44ad 0%, #9b59b6 100%)">
+                                        ${homeSpreadMoneyPct > 15 ? homeSpreadMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${homeSpreadMoneyPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${overPct > 0 || underPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">📈 Totals - Bet Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">Over ${game.totals?.over || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${overPct}%; background: linear-gradient(90deg, #3498db 0%, #2980b9 100%)">
+                                        ${overPct > 15 ? overPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${overPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">Under ${game.totals?.under || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${underPct}%; background: linear-gradient(90deg, #3498db 0%, #2980b9 100%)">
+                                        ${underPct > 15 ? underPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${underPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${overMoneyPct > 0 || underMoneyPct > 0 ? `
+                        <div class="consensus-section">
+                            <div class="section-title">💰 Totals - Money Distribution</div>
+                            <div class="team-row">
+                                <span class="team-name">Over ${game.totals?.over || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${overMoneyPct}%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%)">
+                                        ${overMoneyPct > 15 ? overMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${overMoneyPct}%</span>
+                            </div>
+                            <div class="team-row">
+                                <span class="team-name">Under ${game.totals?.under || ''}</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill" style="width: ${underMoneyPct}%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%)">
+                                        ${underMoneyPct > 15 ? underMoneyPct + '%' : ''}
+                                    </div>
+                                </div>
+                                <span class="percentage-value">${underMoneyPct}%</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${game.best_odds.away || game.best_odds.home ? `
+                        <div class="best-odds">
+                            <div class="best-odds-title">🎲 Best Moneyline Odds</div>
+                            ${game.best_odds.away ? `
+                                <div class="odds-row">
+                                    <span class="odds-label">${game.away_team}:</span>
+                                    <span class="odds-value">${game.best_odds.away}</span>
+                                </div>
+                            ` : ''}
+                            ${game.best_odds.home ? `
+                                <div class="odds-row">
+                                    <span class="odds-label">${game.home_team}:</span>
+                                    <span class="odds-value">${game.best_odds.home}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function formatGameTime(isoTime) {
+            if (!isoTime || isoTime === 'TBD') return 'TBD';
+            
+            try {
+                const date = new Date(isoTime);
+                if (isNaN(date.getTime())) return 'TBD';
+                
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const gameDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                
+                const diffDays = Math.floor((gameDate - today) / (1000 * 60 * 60 * 24));
+                
+                let dateStr = '';
+                if (diffDays === 0) {
+                    dateStr = 'Today';
+                } else if (diffDays === 1) {
+                    dateStr = 'Tomorrow';
+                } else if (diffDays > 1 && diffDays <= 7) {
+                    dateStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+                } else {
+                    dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                
+                const timeStr = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                
+                return `${dateStr} ${timeStr}`;
+            } catch {
+                return 'TBD';
+            }
+        }
+
+        // Removed duplicate updateLastUpdateTime(isoTime) definition
+
+        function displayError(message) {
+            const container = document.getElementById('gamesContainer');
+            container.innerHTML = `
+                <div class="error-message">
+                    <h3>⚠️ Error Loading Data</h3>
+                    <p>${message}</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Will retry automatically...</p>
+                </div>
+            `;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load favorites from cookies first
+            loadFavorites();
+            
+            // Load available leagues first, then fetch data
+            loadAvailableLeagues().then(() => {
+                fetchData();
+                startAutoRefresh();
+            });
+        });
+    </script>
+</body>
+</html>

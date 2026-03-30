@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Testing League Functionality</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        async function testAPI() {
+            try {
+                // Test leagues endpoint
+                const leaguesResp = await fetch('http://localhost:5000/api/leagues');
+                const leaguesData = await leaguesResp.json();
+                
+                if (leaguesData.leagues && leaguesData.leagues.length > 0) {
+                    addResult(true, `✓ Found ${leaguesData.leagues.length} leagues from API`);
+                    
+                    // Show first few leagues
+                    const sample = leaguesData.leagues.slice(0, 5).map(l => l.name).join(', ');
+                    addResult(true, `  Leagues include: ${sample}...`);
+                } else {
+                    addResult(false, '✗ No leagues returned from API');
+                }
+                
+                // Test consensus endpoint
+                const consensusResp = await fetch('http://localhost:5000/api/consensus');
+                const consensusData = await consensusResp.json();
+                
+                addResult(true, `✓ Consensus API works - ${consensusData.count || 0} games found`);
+                
+                if (consensusData.leagues_with_data) {
+                    addResult(true, `  Active leagues: ${consensusData.leagues_with_data.join(', ') || 'none'}`);
+                }
+                
+            } catch (error) {
+                addResult(false, `✗ API Error: ${error.message}`);
+            }
+        }
+        
+        function addResult(pass, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${pass ? 'pass' : 'fail'}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Run tests
+        testAPI();
+    </script>
+</body>
+</html>
