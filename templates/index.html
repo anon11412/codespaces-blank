@@ -1129,7 +1129,7 @@
                         </div>
                     </div>
                     
-                    ${awaySpreadPct > 0 || homeSpreadPct > 0 ? `
+                    ${(game.spread && (game.spread.away || game.spread.home)) ? `
                         <div class="consensus-section">
                             <div class="section-title">🎯 Spread - Bet Distribution</div>
                             <div class="team-row">
@@ -1153,7 +1153,7 @@
                         </div>
                     ` : ''}
                     
-                    ${awaySpreadMoneyPct > 0 || homeSpreadMoneyPct > 0 ? `
+                    ${(game.spread && (game.spread.away || game.spread.home)) ? `
                         <div class="consensus-section">
                             <div class="section-title">💰 Spread - Money Distribution</div>
                             <div class="team-row">
@@ -1177,7 +1177,7 @@
                         </div>
                     ` : ''}
                     
-                    ${overPct > 0 || underPct > 0 ? `
+                    ${(game.totals && (game.totals.over || game.totals.under)) ? `
                         <div class="consensus-section">
                             <div class="section-title">📈 Totals - Bet Distribution</div>
                             <div class="team-row">
@@ -1201,7 +1201,7 @@
                         </div>
                     ` : ''}
                     
-                    ${overMoneyPct > 0 || underMoneyPct > 0 ? `
+                    ${(game.totals && (game.totals.over || game.totals.under)) ? `
                         <div class="consensus-section">
                             <div class="section-title">💰 Totals - Money Distribution</div>
                             <div class="team-row">

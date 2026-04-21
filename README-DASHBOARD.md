@@ -44,8 +44,8 @@ The dashboard will automatically start fetching and displaying data!
 ## How It Works
 
 ### Backend (Flask)
-- Scrapes consensus data from ScoresAndOdds.com
-- Parses HTML to extract betting percentages and odds
+- Scrapes consensus data from ActionNetwork.com
+- Extracts pre-rendered JSON data from the website's structure (Next.js __NEXT_DATA__)
 - Provides clean JSON API at `/api/consensus`
 - Updates available every 30 seconds (respects rate limiting)
 
@@ -66,26 +66,26 @@ Returns current consensus data for all games.
   "success": true,
   "games": [
     {
-      "away_team": "Tigers",
+      "away_team": "Astros",
       "home_team": "Guardians",
-      "game_time": "2025-10-01T17:08:00Z",
-      "market_type": "moneyline",
+      "game_time": "2026-04-21T17:08:00Z",
+      "league": "MLB",
       "bet_percentages": {
-        "away": 42,
-        "home": 58
+        "away": "24%",
+        "home": "76%"
       },
       "money_percentages": {
-        "away": 31,
-        "home": 69
+        "away": "53%",
+        "home": "47%"
       },
       "best_odds": {
-        "away": "+118",
-        "home": "-125"
+        "away": "100",
+        "home": "-120"
       }
     }
   ],
-  "last_updated": "2025-10-01T14:30:00",
-  "total_games": 4
+  "last_updated": "2026-04-21T14:30:00",
+  "count": 1
 }
 ```
 
@@ -95,8 +95,8 @@ Health check endpoint.
 **Response:**
 ```json
 {
-  "status": "ok",
-  "timestamp": "2025-10-01T14:30:00"
+  "status": "healthy",
+  "leagues": ["NFL", "NCAAF", "NBA", "NCAAB", "MLB", "NHL"]
 }
 ```
 
@@ -127,7 +127,7 @@ When bet % and money % differ significantly, it indicates "sharp" (professional)
 Edit `templates/index.html`, line with `setInterval`:
 
 ```javascript
-autoRefreshInterval = setInterval(fetchData, 30000); // Change 30000 to desired milliseconds
+autoRefreshInterval = setInterval(fetchData, 15000); // Default is 15 seconds
 ```
 
 ### Change Color Scheme
@@ -139,29 +139,30 @@ background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); /* Bet bars */
 background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%); /* Money bars */
 ```
 
-### Add More Sports
+### Supported Sports
 
-The scraper currently targets MLB. To add other sports, modify the URL in `app.py`:
-
-```python
-url = "https://www.scoresandodds.com/nfl/consensus-picks"  # For NFL
-url = "https://www.scoresandodds.com/nba/consensus-picks"  # For NBA
-```
+The scraper currently targets:
+- NFL
+- NCAAF (College Football)
+- NBA
+- NCAAB (College Basketball)
+- MLB
+- NHL
 
 ## Troubleshooting
 
 ### No Data Showing
-- Check that ScoresAndOdds.com is accessible
+- Check that ActionNetwork.com is accessible
 - Verify there are games scheduled for today
 - Check browser console for JavaScript errors
 
 ### Connection Errors
 - Ensure you have internet connection
-- ScoresAndOdds may be blocking requests (try different User-Agent)
+- Action Network may be blocking requests (User-Agent header is required)
 - Add delay between requests if rate limited
 
 ### Slow Loading
-- Increase timeout in `app.py` (default is 10 seconds)
+- Increase timeout in `app.py` (default is 15 seconds)
 - Check your internet connection speed
 - Consider caching data for faster subsequent loads
 
@@ -174,12 +175,12 @@ url = "https://www.scoresandodds.com/nba/consensus-picks"  # For NBA
 - ✅ **Consider Premium APIs** - For commercial use, subscribe to official data feeds
 
 ### Data Accuracy
-- Data is only as current as ScoresAndOdds.com updates
-- Typical delay: 5-30 minutes behind real-time
-- For true real-time data, use professional APIs (Action Network, Sports Insights)
+- Data is only as current as ActionNetwork.com updates
+- Typical delay: 1-5 minutes behind real-time
+- For true real-time data, use professional APIs
 
 ### Performance
-- Scraping adds ~2-5 seconds load time per refresh
+- Scraping adds ~1-2 seconds load time per league
 - Dashboard caches in browser for smooth experience
 - Consider running on a server for 24/7 monitoring
 

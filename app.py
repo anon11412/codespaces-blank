@@ -14,7 +14,7 @@ CORS(app)
 _cached_data = None
 _last_update_time = None
 
-# Leagues supported by ScoresAndOdds for scraping
+# Leagues supported by Action Network
 SCRAPE_LEAGUES = {
     'NFL': 'nfl',
     'NCAAF': 'ncaaf',
@@ -24,116 +24,152 @@ SCRAPE_LEAGUES = {
     'NHL': 'nhl'
 }
 
+def get_action_network_data(league_slug):
+    url = f"https://www.actionnetwork.com/{league_slug}/public-betting"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        script = soup.find('script', id='__NEXT_DATA__')
+        
+        if script:
+            return json.loads(script.string)
+        else:
+            match = re.search(r'{"props":.*}', response.text)
+            if match:
+                return json.loads(match.group(0))
+    except Exception as e:
+        print(f"Error fetching {league_slug} from Action Network: {e}")
+    return None
+
 def scrape_consensus_data():
     all_games = []
-    failed_leagues = []
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-
+    
     for league_display, league_slug in SCRAPE_LEAGUES.items():
-        url = f"https://www.scoresandodds.com/{league_slug}/consensus-picks"
+        print(f"Processing {league_display}...")
+        data = get_action_network_data(league_slug)
+        
+        if not data:
+            continue
+            
         try:
-            print(f"Scraping {league_display} from {url}...")
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, 'html.parser')
+            page_props = data.get('props', {}).get('pageProps', {})
+            scoreboard = page_props.get('scoreboardResponse', {})
+            games = scoreboard.get('games', [])
             
-            # Find all trend cards (consensus data containers)
-            trend_cards = soup.find_all('div', class_='trend-card')
-            
-            # Map to keep track of games to avoid duplicates 
-            games_by_teams = {}
-            
-            for card in trend_cards:
-                # Extract market type
-                market = 'unknown'
-                classes = card.get('class', [])
-                for cls in classes:
-                    if 'moneyline' in cls: market = 'moneyline'
-                    elif 'spread' in cls: market = 'spread'
-                    elif 'total' in cls: market = 'total'
+            for g in games:
+                # Basic game info - Using FULL NAME
+                away_team = "N/A"
+                home_team = "N/A"
+                for t in g.get('teams', []):
+                    if t['id'] == g['away_team_id']: away_team = t.get('full_name', t.get('display_name', 'N/A'))
+                    if t['id'] == g['home_team_id']: home_team = t.get('full_name', t.get('display_name', 'N/A'))
                 
-                # Get teams
-                team_names = card.find_all('span', class_='team-name')
-                if len(team_names) < 2:
+                game_id = str(g.get('id', ''))
+                
+                game_data = {
+                    'league': league_display,
+                    'away_team': away_team,
+                    'home_team': home_team,
+                    'bet_percentages': {'away': '0%', 'home': '0%'},
+                    'money_percentages': {'away': '0%', 'home': '0%'},
+                    'spread_percentages': {'away': '0%', 'home': '0%'},
+                    'spread_money_percentages': {'away': '0%', 'home': '0%'},
+                    'total_percentages': {'over': '0%', 'under': '0%'},
+                    'total_money_percentages': {'over': '0%', 'under': '0%'},
+                    'best_odds': {'away': '', 'home': ''},
+                    'spread': {'away': '', 'home': ''},
+                    'totals': {'over': '', 'under': ''},
+                    'num_bets': g.get('num_bets', 0),
+                    'event_id': game_id,
+                    'start_time': g.get('start_time'),
+                    'status': g.get('status_display', 'scheduled'),
+                    'is_live': g.get('status') == 'live'
+                }
+                
+                markets_container = g.get('markets', {})
+                if not markets_container:
                     continue
-                
-                away_team = team_names[0].get_text(strip=True)
-                home_team = team_names[1].get_text(strip=True)
-                game_id = f"{league_display}_{away_team}_{home_team}".replace(" ", "_")
-                
-                if game_id not in games_by_teams:
-                    games_by_teams[game_id] = {
-                        'league': league_display,
-                        'away_team': away_team,
-                        'home_team': home_team,
-                        'bet_percentages': {'away': '0%', 'home': '0%'},
-                        'money_percentages': {'away': '0%', 'home': '0%'},
-                        'spread_percentages': {'away': '0%', 'home': '0%'},
-                        'spread_money_percentages': {'away': '0%', 'home': '0%'},
-                        'total_percentages': {'over': '0%', 'under': '0%'},
-                        'total_money_percentages': {'over': '0%', 'under': '0%'},
-                        'best_odds': {'away': 'N/A', 'home': 'N/A'},
-                        'spread': {'away': '', 'home': ''},
-                        'totals': {'over': '', 'under': ''},
-                        'num_bets': 0,
-                        'event_id': game_id,
-                        'start_time': datetime.now().isoformat(),
-                        'status': 'scheduled',
-                        'is_live': False
-                    }
-                
-                game_data = games_by_teams[game_id]
-                
-                # Extract percentages
-                graphs = card.find_all('span', class_='trend-graph-percentage')
-                
-                def extract_pct(graph):
-                    if not graph: return '0%', '0%'
-                    p_a = graph.find('span', class_='percentage-a')
-                    p_b = graph.find('span', class_='percentage-b')
-                    val_a = p_a.get_text(strip=True) if p_a else '0%'
-                    val_b = p_b.get_text(strip=True) if p_b else '0%'
-                    if not val_a or val_a == '\u00a0': val_a = '0%'
-                    if not val_b or val_b == '\u00a0': val_b = '0%'
-                    return val_a, val_b
 
-                if market == 'moneyline':
-                    if len(graphs) >= 1:
-                        a, h = extract_pct(graphs[0])
-                        game_data['bet_percentages'] = {'away': a, 'home': h}
-                    if len(graphs) >= 2:
-                        a, h = extract_pct(graphs[1])
-                        game_data['money_percentages'] = {'away': a, 'home': h}
+                # PRIORITY 1: Pinnacle (Book 15) for consensus percentages
+                # PRIORITY 2: Any other book for percentages
                 
-                elif market == 'spread':
-                    if len(graphs) >= 1:
-                        a, h = extract_pct(graphs[0])
-                        game_data['spread_percentages'] = {'away': a, 'home': h}
-                    if len(graphs) >= 2:
-                        a, h = extract_pct(graphs[1])
-                        game_data['spread_money_percentages'] = {'away': a, 'home': h}
+                # First, find best odds and market values (spread/total) from ANY book if 15 is missing
+                all_book_ids = list(markets_container.keys())
                 
-                elif market == 'total':
-                    if len(graphs) >= 1:
-                        o, u = extract_pct(graphs[0])
-                        game_data['total_percentages'] = {'over': o, 'under': u}
-                    if len(graphs) >= 2:
-                        o, u = extract_pct(graphs[1])
-                        game_data['total_money_percentages'] = {'over': o, 'under': u}
+                # Helper to extract data from a specific book's market
+                def extract_from_book(book_id, target_data):
+                    book_event = markets_container.get(book_id, {}).get('event', {})
+                    
+                    # Moneyline
+                    for o in book_event.get('moneyline', []):
+                        side = 'away' if o.get('team_id') == g['away_team_id'] else 'home'
+                        if not target_data['best_odds'][side]:
+                            target_data['best_odds'][side] = str(o.get('odds', ''))
+                        
+                        # Only take percentages if they are non-zero or if we don't have them yet
+                        tickets = o.get('bet_info', {}).get('tickets', {}).get('percent', 0)
+                        money = o.get('bet_info', {}).get('money', {}).get('percent', 0)
+                        if tickets > 0 or target_data['bet_percentages'][side] == '0%':
+                            target_data['bet_percentages'][side] = f"{tickets}%"
+                        if money > 0 or target_data['money_percentages'][side] == '0%':
+                            target_data['money_percentages'][side] = f"{money}%"
 
-            for g in games_by_teams.values():
-                all_games.append(g)
+                    # Spread
+                    for o in book_event.get('spread', []):
+                        side = 'away' if o.get('team_id') == g['away_team_id'] else 'home'
+                        if not target_data['spread'][side]:
+                            val = o.get('value')
+                            if val is not None:
+                                target_data['spread'][side] = f"{'+' if val > 0 else ''}{val}"
+                        
+                        tickets = o.get('bet_info', {}).get('tickets', {}).get('percent', 0)
+                        money = o.get('bet_info', {}).get('money', {}).get('percent', 0)
+                        if tickets > 0 or target_data['spread_percentages'][side] == '0%':
+                            target_data['spread_percentages'][side] = f"{tickets}%"
+                        if money > 0 or target_data['spread_money_percentages'][side] == '0%':
+                            target_data['spread_money_percentages'][side] = f"{money}%"
+
+                    # Total
+                    for o in book_event.get('total', []):
+                        side = o.get('side')
+                        if side in ['over', 'under']:
+                            if not target_data['totals'][side]:
+                                val = o.get('value')
+                                if val is not None:
+                                    target_data['totals'][side] = str(val)
+                            
+                            tickets = o.get('bet_info', {}).get('tickets', {}).get('percent', 0)
+                            money = o.get('bet_info', {}).get('money', {}).get('percent', 0)
+                            if tickets > 0 or target_data['total_percentages'][side] == '0%':
+                                target_data['total_percentages'][side] = f"{tickets}%"
+                            if money > 0 or target_data['total_money_percentages'][side] == '0%':
+                                target_data['total_money_percentages'][side] = f"{money}%"
+
+                # 1. Try Pinnacle first for everything
+                if '15' in markets_container:
+                    extract_from_book('15', game_data)
+                
+                # 2. For anything still 0 or empty, try other books
+                for bid in all_book_ids:
+                    if bid == '15': continue
+                    extract_from_book(bid, game_data)
+
+                all_games.append(game_data)
                 
         except Exception as e:
-            failed_leagues.append(league_display)
-            print(f"Error scraping {league_display}: {e}")
+            print(f"Error parsing {league_display} data: {e}")
             continue
 
     return {
         'games': all_games,
-        'source': 'ScoresAndOdds Scraper',
+        'source': 'Action Network Scraper',
         'count': len(all_games),
         'leagues_with_data': list(set(g['league'] for g in all_games))
     }
@@ -151,23 +187,30 @@ def get_consensus():
     if _cached_data and _last_update_time:
         last_time = datetime.fromisoformat(_last_update_time)
         if (now - last_time).total_seconds() < 30:
-            return jsonify(_cached_data)
-
-    new_data = scrape_consensus_data()
-    _cached_data = new_data
-    _last_update_time = now.isoformat()
-    new_data['last_updated'] = _last_update_time
+            data_to_return = _cached_data
+        else:
+            new_data = scrape_consensus_data()
+            _cached_data = new_data
+            _last_update_time = now.isoformat()
+            new_data['last_updated'] = _last_update_time
+            data_to_return = new_data
+    else:
+        new_data = scrape_consensus_data()
+        _cached_data = new_data
+        _last_update_time = now.isoformat()
+        new_data['last_updated'] = _last_update_time
+        data_to_return = new_data
     
-    # Apply filters
+    # Apply league filter
     league_filter = request.args.get('league')
     if league_filter and league_filter != 'all':
-        filtered_games = [g for g in new_data['games'] if g['league'] == league_filter]
-        filtered_data = new_data.copy()
+        filtered_games = [g for g in data_to_return['games'] if g['league'] == league_filter]
+        filtered_data = data_to_return.copy()
         filtered_data['games'] = filtered_games
         filtered_data['count'] = len(filtered_games)
         return jsonify(filtered_data)
         
-    return jsonify(new_data)
+    return jsonify(data_to_return)
 
 @app.route('/api/leagues')
 def get_leagues():
@@ -181,4 +224,3 @@ def health():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port)
-# Final ScoresAndOdds Scraper v2 - 2026-04-20
